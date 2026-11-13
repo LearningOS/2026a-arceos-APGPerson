@@ -2,8 +2,8 @@
   "schema": 1,
   "courseId": 2078,
   "repository": "LearningOS/2026a-arceos-APGPerson",
-  "commit": "7e6c034ad0327fa1a2bc9da520edf9d975956eae",
-  "score": 100,
+  "commit": "ad26de5c3be19e0f4e17ccc703b14a288da6b42e",
+  "score": 600,
   "totalScore": 600,
   "exercises": [
     {
@@ -16,43 +16,43 @@
     {
       "name": "ramfs_rename",
       "max": 100,
-      "score": 0,
-      "status": "fail",
+      "score": 100,
+      "status": "pass",
       "exitCode": 0
     },
     {
       "name": "alt_alloc",
       "max": 100,
-      "score": 0,
-      "status": "fail",
+      "score": 100,
+      "status": "pass",
       "exitCode": 0
     },
     {
       "name": "support_hashmap",
       "max": 100,
-      "score": 0,
-      "status": "fail",
-      "exitCode": 2
+      "score": 100,
+      "status": "pass",
+      "exitCode": 0
     },
     {
       "name": "sys_map",
       "max": 100,
-      "score": 0,
-      "status": "fail",
+      "score": 100,
+      "status": "pass",
       "exitCode": 0
     },
     {
       "name": "simple_hv",
       "max": 100,
-      "score": 0,
-      "status": "fail",
+      "score": 100,
+      "status": "pass",
       "exitCode": 0
     }
   ],
   "student": "APGPerson",
-  "runId": "42737489580",
+  "runId": "43345841850",
   "runAttempt": "1",
   "upload": {
-    "status": "accepted"
+    "status": "pending"
   }
 }
