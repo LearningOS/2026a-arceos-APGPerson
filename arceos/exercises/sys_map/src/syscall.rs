@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use core::ffi::{c_void, c_char, c_int};
+use axstd::vec;
 use axhal::arch::TrapFrame;
 use axhal::trap::{register_trap_handler, SYSCALL};
 use axerrno::LinuxError;
@@ -8,6 +9,7 @@ use axtask::current;
 use axtask::TaskExtRef;
 use axhal::paging::MappingFlags;
 use arceos_posix_api as api;
+use memory_addr::{align_up_4k, VirtAddr, VirtAddrRange};
 
 const SYS_IOCTL: usize = 29;
 const SYS_OPENAT: usize = 56;
@@ -140,7 +142,28 @@ fn sys_mmap(
     fd: i32,
     _offset: isize,
 ) -> isize {
-    unimplemented!("no sys_mmap!");
+    let cur = current();
+    let mut asp = cur.task_ext().aspace.lock();
+    let addr = if addr.is_null(){
+        let Some(addr) = asp.find_free_area(VirtAddr::from_usize(0), align_up_4k(length), VirtAddrRange::from_start_size(VirtAddr::from_mut_ptr_of(addr), 0xFFFFFF))else {
+            return -1;
+        };
+        addr
+    }else{
+        VirtAddr::from_mut_ptr_of(addr)
+    };
+    
+    if let Err(_) = asp.map_alloc(addr, align_up_4k(length), MappingFlags::all(), true){
+        return -1;
+    };
+    let buf = vec![0u8;length];
+    let ret = api::sys_read(fd, buf.as_ptr() as *mut c_void, length);
+    if let Err(_) = asp.write(addr, &buf[..]){
+        return -1;
+    }
+    ax_println!("Mapping to {}",addr.as_usize());
+    ax_println!("Mmap Done");
+    addr.as_usize() as isize
 }
 
 fn sys_openat(dfd: c_int, fname: *const c_char, flags: c_int, mode: api::ctypes::mode_t) -> isize {

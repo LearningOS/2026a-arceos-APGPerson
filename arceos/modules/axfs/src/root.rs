@@ -99,6 +99,32 @@ impl RootDirectory {
             f(self.mounts[idx].fs.clone(), &path[max_len..]) // matched at `idx`
         }
     }
+
+    fn lookup_path_in_fs<'a>(&self, path: &'a str) -> AxResult<&'a str>
+    {
+        debug!("lookup at root: {}", path);
+        let path = path.trim_matches('/');
+        if let Some(rest) = path.strip_prefix("./") {
+            return Ok(rest);
+        }
+
+        let mut max_len = 0;
+
+        // Find the filesystem that has the longest mounted path match
+        // TODO: more efficient, e.g. trie
+        for (_, mp) in self.mounts.iter().enumerate() {
+            // skip the first '/'
+            if path.starts_with(&mp.path[1..]) && mp.path.len() - 1 > max_len {
+                max_len = mp.path.len() - 1;
+            }
+        }
+
+        if max_len == 0 {
+            Ok(path) // not matched any mount point
+        } else {
+            Ok(&path[max_len..]) // matched at `idx`
+        }
+    }
 }
 
 impl VfsNodeOps for RootDirectory {
@@ -133,8 +159,9 @@ impl VfsNodeOps for RootDirectory {
     }
 
     fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
+        let dst_path = self.lookup_path_in_fs(dst_path)?;
         self.lookup_mounted_fs(src_path, |fs, rest_path| {
-            if rest_path.is_empty() {
+            if rest_path.is_empty() || dst_path.is_empty() {
                 ax_err!(PermissionDenied) // cannot rename mount points
             } else {
                 fs.root_dir().rename(rest_path, dst_path)

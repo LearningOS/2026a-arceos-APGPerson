@@ -32,6 +32,7 @@ _run_guest:
     /* Swap in guest CSRs. */
     ld    t1, ({guest_sstatus})(a0)
     csrrw t1, sstatus, t1
+    ori t1, t1, 2
     sd    t1, ({hyp_sstatus})(a0)
 
     ld    t1, ({guest_hstatus})(a0)
@@ -132,6 +133,11 @@ _guest_exit:
 _restore_csrs:
     /* Swap in hypervisor CSRs. */
     ld    t1, ({hyp_sstatus})(a0)
+
+    li    t2, 2
+    not   t2, t2
+    and   t1, t1, t2
+
     csrrw t1, sstatus, t1
     sd    t1, ({guest_sstatus})(a0)
 

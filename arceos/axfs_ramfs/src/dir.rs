@@ -67,11 +67,38 @@ impl DirNode {
         children.remove(name);
         Ok(())
     }
+
 }
 
 impl VfsNodeOps for DirNode {
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
         Ok(VfsNodeAttr::new_dir(4096, 0))
+    }
+
+    fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult{
+        let (cur_src,next_src) = split_path(src_path);
+        let (cur_dst,next_dst) = split_path(dst_path);
+        if (next_dst.is_none() && next_src.is_some()) || (next_dst.is_some() && next_src.is_none()){
+            return Err(VfsError::OperationNotSupported);
+        }
+        if cur_src != cur_dst && next_src.is_some(){
+            return Err(VfsError::OperationNotSupported);
+        }
+        
+        if next_src.is_some(){ // 下一层
+            let guard  = self.children.read();
+            let Some(dir) = guard.get(cur_src) else {
+                return Err(VfsError::NotFound)
+            };
+            dir.rename(next_src.expect("Is Some"), next_dst.expect("Is Some"))
+        }else{ // 实际rename
+            let mut guard  = self.children.write();
+            let Some(file) = guard.remove(cur_src) else {
+                return Err(VfsError::NotFound)
+            };
+            guard.insert(cur_dst.into(), file);
+            Ok(())
+        }
     }
 
     fn parent(&self) -> Option<VfsNodeRef> {

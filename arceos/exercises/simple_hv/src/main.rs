@@ -102,17 +102,36 @@ fn vmexit_handler(ctx: &mut VmCpuRegisters) -> bool {
             }
         },
         Trap::Exception(Exception::IllegalInstruction) => {
-            panic!("Bad instruction: {:#x} sepc: {:#x}",
-                stval::read(),
+            let ins = stval::read();
+            ax_println!(
+                "Bad instruction: {:#x} sepc: {:#x}",
+                ins,
                 ctx.guest_regs.sepc
             );
+            ctx.guest_regs.gprs.set_reg(A1, 0x1234);
+            ctx.guest_regs.sepc += if ins & 0b11 == 0b11 { 4 } else { 2 };
         },
         Trap::Exception(Exception::LoadGuestPageFault) => {
-            panic!("LoadGuestPageFault: stval{:#x} sepc: {:#x}",
+            ax_println!(
+                "LoadGuestPageFault: stval{:#x} sepc: {:#x}",
                 stval::read(),
                 ctx.guest_regs.sepc
             );
+            ctx.guest_regs.gprs.set_reg(A0, 0x6688); // Why set to 0x6688
+            ctx.guest_regs.sepc += 4;
         },
+        Trap::Interrupt(scause::Interrupt::SupervisorTimer) => {
+            ax_println!(
+                "Supervisor Timer: stval{:#x} sepc: {:#x}",
+                stval::read(),
+                ctx.guest_regs.sepc
+            );
+            let current_time = riscv::register::time::read64();
+            let next_time = current_time + 100000;
+            unsafe { 
+                core::arch::asm!("ecall", in("a7") 0x54494d45, in("a6") 0, in("a0") next_time); 
+            }
+        }
         _ => {
             panic!(
                 "Unhandled trap: {:?}, sepc: {:#x}, stval: {:#x}",
